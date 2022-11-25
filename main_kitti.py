@@ -22,19 +22,19 @@ import gc
 import cv2
 
 cudnn.benchmark = True
-os.environ['CUDA_VISIBLE_DEVICES'] = '0,1,2,3'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 parser = argparse.ArgumentParser(description='Attention Concatenation Volume for Accurate and Efficient Stereo Matching (ACVNet)')
 parser.add_argument('--model', default='acvnet', help='select a model structure', choices=__models__.keys())
 parser.add_argument('--maxdisp', type=int, default=192, help='maximum disparity')
 parser.add_argument('--dataset', default='kitti', help='dataset name', choices=__datasets__.keys())
-parser.add_argument('--kitti15_datapath', default='/home/xgw/data/KITTI_2015/', help='data path')
+parser.add_argument('--kitti15_datapath', default='/home/sunyuhan/data_scene_flow/', help='data path')
 parser.add_argument('--kitti12_datapath', default='/home/xgw/data/KITTI_2012/', help='data path')
-parser.add_argument('--trainlist', default='./filenames/kitti12_15_all.txt', help='training list')
+parser.add_argument('--trainlist', default='./filenames/kitti15_train.txt', help='training list')
 parser.add_argument('--testlist',default='./filenames/kitti15_val.txt', help='testing list')
 parser.add_argument('--lr', type=float, default=0.001, help='base learning rate')
-parser.add_argument('--batch_size', type=int, default=16, help='training batch size')
-parser.add_argument('--test_batch_size', type=int, default=8, help='testing batch size')
+parser.add_argument('--batch_size', type=int, default=4, help='training batch size')
+parser.add_argument('--test_batch_size', type=int, default=4, help='testing batch size')
 parser.add_argument('--epochs', type=int, default=600, help='number of epochs to train')
 parser.add_argument('--lrepochs',default="400:10", type=str,  help='the epochs to decay lr: the downscale rate')
 parser.add_argument('--logdir',default='./checkpoints/', help='the directory to save logs and checkpoints')
@@ -69,22 +69,22 @@ optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.999))
 
 # load parameters
 start_epoch = 0
-if args.resume:
-    # find all checkpoints file and sort according to epoch id
-    all_saved_ckpts = [fn for fn in os.listdir(args.logdir) if fn.endswith(".ckpt")]
-    all_saved_ckpts = sorted(all_saved_ckpts, key=lambda x: int(x.split('_')[-1].split('.')[0]))
-    # use the latest checkpoint file
-    loadckpt = os.path.join(args.logdir, all_saved_ckpts[-1])
-    print("loading the lastest model in logdir: {}".format(loadckpt))
-    state_dict = torch.load(loadckpt)
-    model.load_state_dict(state_dict['model'])
-    optimizer.load_state_dict(state_dict['optimizer'])
-    start_epoch = state_dict['epoch'] + 1
-elif args.loadckpt:
-    # load the checkpoint file specified by args.loadckpt
-    print("loading model {}".format(args.loadckpt))
-    state_dict = torch.load(args.loadckpt)
-    model.load_state_dict(state_dict['model'])
+# if args.resume:
+#     # find all checkpoints file and sort according to epoch id
+#     all_saved_ckpts = [fn for fn in os.listdir(args.logdir) if fn.endswith(".ckpt")]
+#     all_saved_ckpts = sorted(all_saved_ckpts, key=lambda x: int(x.split('_')[-1].split('.')[0]))
+#     # use the latest checkpoint file
+#     loadckpt = os.path.join(args.logdir, all_saved_ckpts[-1])
+#     print("loading the lastest model in logdir: {}".format(loadckpt))
+#     state_dict = torch.load(loadckpt)
+#     model.load_state_dict(state_dict['model'])
+#     optimizer.load_state_dict(state_dict['optimizer'])
+#     start_epoch = state_dict['epoch'] + 1
+# elif args.loadckpt:
+#     # load the checkpoint file specified by args.loadckpt
+#     print("loading model {}".format(args.loadckpt))
+#     state_dict = torch.load(args.loadckpt)
+#     model.load_state_dict(state_dict['model'])
 print("start at epoch {}".format(start_epoch))
 
 

@@ -379,6 +379,61 @@ class BasicBlock_groups(nn.Module):
         out += x
 
         return out
+class row_attention_block(nn.Module):
+    def __init__(self, in_dim, q_k_dim):
+        '''
+        Parameters
+        ----------
+        in_dim : int
+            channel of input img tensor
+        q_k_dim: int
+            channel of Q, K vector
+        '''
+        super(row_attention_block, self).__init__()
+        self.in_dim = in_dim
+        self.q_k_dim = q_k_dim
+        
+        self.query_conv = nn.Conv3d(in_channels=in_dim, out_channels = self.q_k_dim, kernel_size=1)
+        self.key_conv = nn.Conv3d(in_channels=in_dim, out_channels = self.q_k_dim, kernel_size=1)
+        self.value_conv = nn.Conv3d(in_channels=in_dim, out_channels = self.in_dim, kernel_size=1)
+        self.softmax = nn.Softmax(dim=2)
+        self.gamma = nn.Parameter(torch.zeros(1))
+    def forward(self, x):
+        '''
+        Parameters
+        ----------
+        x : Tensor
+            4-D , (batch, in_dims, depth, height, width) -- (B, C, D, H, W)
+        '''
+        
+        ## c1 = in_dims; c2 = q_k_dim
+        B, C, D, H, W = x.shape
+        
+        Q = self.query_conv(x) #size = (b,c2, h,w)
+        K = self.key_conv(x)   #size = (b, c2, h, w)
+        V = self.value_conv(x) #size = (b, c1,h,w)
+        
+        Q = Q.permute(0,2,3,1,4).contiguous().view(B*D*H, -1,W).permute(0,2,1) #size = (b*h,w,c2)
+        K = K.permute(0,2,3,1,4).contiguous().view(B*D*H, -1,W)  #size = (b*h,c2,w)
+        V = V.permute(0,2,3,1,4).contiguous().view(B*D*H, -1,W)  #size = (b*h, c1,w)
+        
+        #size = (b*h,w,w) [:,i,j] 表示Q的所有h的第 Wi行位置上所有通道值与 K的所有h的第 Wj列位置上的所有通道值的乘积，
+        # 即(1,c2) * (c2,1) = (1,1)
+        row_attn = torch.bmm(Q,K) 
+        ########
+        #此时的 row_atten的[:,i,0:w] 表示Q的所有h的第 Wi行位置上所有通道值与 K的所有行的 所有列(0:w)的逐个位置上的所有通道值的乘积
+        #此操作即为 Q的某个（i,j）与 K的（i,0:w）逐个位置的值的乘积，得到行attn
+        ########
+        #对row_attn进行softmax
+        row_attn = self.softmax(row_attn) #对列进行softmax，即[k,i,0:w] ，某一行的所有列加起来等于1，
+        #size = (b*h,c1,w) 这里先需要对row_atten进行 行列置换，使得某一列的所有行加起来等于1
+        #[:,i,j]即为V的所有行的某个通道上，所有列的值 与 row_attn的行的乘积，即求权重和
+        out = torch.bmm(V,row_attn.permute(0,2,1)) 
+        #size = (b,c1,h,2)
+        out = out.view(B, D, H, C, W).permute(0,3,1,2,4)
+        out = self.gamma*out + x 
+        return out
+
 
 class attention_block(nn.Module):
     def __init__(self, channels_3d, num_heads=8, block=4):

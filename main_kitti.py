@@ -22,7 +22,7 @@ import gc
 import cv2
 
 cudnn.benchmark = True
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
 
 parser = argparse.ArgumentParser(description='Attention Concatenation Volume for Accurate and Efficient Stereo Matching (ACVNet)')
 parser.add_argument('--model', default='acvnet', help='select a model structure', choices=__models__.keys())
@@ -69,17 +69,17 @@ optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.999))
 
 # load parameters
 start_epoch = 0
-# if args.resume:
-#     # find all checkpoints file and sort according to epoch id
-#     all_saved_ckpts = [fn for fn in os.listdir(args.logdir) if fn.endswith(".ckpt")]
-#     all_saved_ckpts = sorted(all_saved_ckpts, key=lambda x: int(x.split('_')[-1].split('.')[0]))
-#     # use the latest checkpoint file
-#     loadckpt = os.path.join(args.logdir, all_saved_ckpts[-1])
-#     print("loading the lastest model in logdir: {}".format(loadckpt))
-#     state_dict = torch.load(loadckpt)
-#     model.load_state_dict(state_dict['model'])
-#     optimizer.load_state_dict(state_dict['optimizer'])
-#     start_epoch = state_dict['epoch'] + 1
+if args.resume:
+    # find all checkpoints file and sort according to epoch id
+    all_saved_ckpts = [fn for fn in os.listdir(args.logdir) if fn.endswith(".ckpt")]
+    all_saved_ckpts = sorted(all_saved_ckpts, key=lambda x: int(x.split('_')[-1].split('.')[0]))
+    # use the latest checkpoint file
+    loadckpt = os.path.join(args.logdir, all_saved_ckpts[-1])
+    print("loading the lastest model in logdir: {}".format(loadckpt))
+    state_dict = torch.load(loadckpt)
+    model.load_state_dict(state_dict['model'])
+    optimizer.load_state_dict(state_dict['optimizer'])
+    start_epoch = state_dict['epoch'] + 1
 # elif args.loadckpt:
 #     # load the checkpoint file specified by args.loadckpt
 #     print("loading model {}".format(args.loadckpt))

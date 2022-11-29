@@ -6,6 +6,7 @@ from torch.autograd import Variable
 from torch.autograd.function import Function
 import torch.nn.functional as F
 import numpy as np
+from models.pos_encoding import *
 
 
 
@@ -398,6 +399,7 @@ class row_attention_block(nn.Module):
         self.value_conv = nn.Conv3d(in_channels=in_dim, out_channels = self.in_dim, kernel_size=1)
         self.softmax = nn.Softmax(dim=2)
         self.gamma = nn.Parameter(torch.zeros(1))
+        self.pos_encoding = PositionalEncoding(in_dim)
     def forward(self, x):
         '''
         Parameters
@@ -412,6 +414,10 @@ class row_attention_block(nn.Module):
         Q = self.query_conv(x) #size = (b,c2, h,w)
         K = self.key_conv(x)   #size = (b, c2, h, w)
         V = self.value_conv(x) #size = (b, c1,h,w)
+
+        Q = self.pos_encoding(Q)
+        K = self.pos_encoding(K)
+        V = self.pos_encoding(V)
         
         Q = Q.permute(0,2,3,1,4).contiguous().view(B*D*H, -1,W).permute(0,2,1) #size = (b*h,w,c2)
         K = K.permute(0,2,3,1,4).contiguous().view(B*D*H, -1,W)  #size = (b*h,c2,w)

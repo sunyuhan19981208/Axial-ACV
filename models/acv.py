@@ -61,7 +61,7 @@ class hourglass(nn.Module):
         self.conv2 = nn.Sequential(convbn_3d(in_channels * 2, in_channels * 2, 3, 1, 1),
                                    nn.ReLU(inplace=True))
 
-        self.conv3 = nn.Sequential(convbn_3d(in_channels * 2, in_channels * 4, 3, 2, 1),
+        self.conv3 = nn.Sequential(convbn_3d(in_channels * 2, in_channels * 4, 3, 1, 1),
                                    nn.ReLU(inplace=True))
 
         self.conv4 = nn.Sequential(convbn_3d(in_channels * 4, in_channels * 4, 3, 1, 1),
@@ -70,9 +70,11 @@ class hourglass(nn.Module):
         # self.attention_block = attention_block(channels_3d=in_channels * 4, num_heads=16, block=(4, 4, 4))
         self.attention_block = row_attention_block(in_channels * 4, in_channels * 4)
 
-        self.conv5 = nn.Sequential(
-            nn.ConvTranspose3d(in_channels * 4, in_channels * 2, 3, padding=1, output_padding=1, stride=2, bias=False),
-            nn.BatchNorm3d(in_channels * 2))
+        # self.conv5 = nn.Sequential(
+        #     nn.ConvTranspose3d(in_channels * 4, in_channels * 2, 3, padding=0, output_padding=0, stride=1, bias=False),
+        #     nn.BatchNorm3d(in_channels * 2))
+        self.conv5 = nn.Sequential(convbn_3d(in_channels * 4, in_channels * 2, 3, 1, 1),
+                                   nn.ReLU(inplace=True))
 
         self.conv6 = nn.Sequential(
             nn.ConvTranspose3d(in_channels * 2, in_channels, 3, padding=1, output_padding=1, stride=2, bias=False),
